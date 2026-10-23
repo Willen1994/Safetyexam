@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Operator Safety Quiz</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --correct-bg: #dcfce7;
+            --correct-border: #16a34a;
+            --correct-text: #15803d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .quiz-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background-color: transparent;
+            perspective: 1000px;
+            height: 320px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: left;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 12px;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-y: auto;
+        }
+
+        .card-front {
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            border: 2px solid var(--correct-border);
+            background-color: #f0fdf4;
+        }
+
+        .q-number {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .q-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .options-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .option-item {
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            background-color: #f1f5f9;
+            font-size: 0.9rem;
+            line-height: 1.3;
+        }
+
+        .option-item.correct {
+            background-color: var(--correct-bg);
+            border: 1px solid var(--correct-border);
+            color: var(--correct-text);
+            font-weight: 600;
+        }
+
+        .hint-text {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .answer-heading {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--correct-text);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .prompt-banner {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(150%);
+            background-color: #1e293b;
+            color: #fff;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+            max-width: 90%;
+            width: 500px;
+            text-align: center;
+        }
+
+        .prompt-banner.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .prompt-banner h4 {
+            margin: 0 0 6px 0;
+            color: #4ade80;
+        }
+
+        .prompt-banner p {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Machine Operator Safety Quiz</h1>
+    <p class="subtitle">Click on any question card to flip it and reveal the correct answer prompt.</p>
+
+    <div class="quiz-container" id="quizContainer"></div>
+
+    <div class="prompt-banner" id="promptBanner">
+        <h4 id="promptTitle">Question Answered</h4>
+        <p id="promptBody">Correct Answer</p>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                id: 1,
+                question: "Circle the two documents that are absolutely necessary for the daily operation of a forklift, earthmoving machine or lifting machine!",
+                options: ["Machine logbook", "Trip sheet", "Machine manual", "Lifting Equipment Safety Regulations"],
+                correct: [0, 2]
+            },
+            {
+                id: 2,
+                question: "What must be checked on the crane hook before lifting a load with an overhead crane? (Circle two)",
+                options: ["The swivel capability of the crane hook", "The manufacturing year of the crane hook", "The manufacturing location of the crane hook", "The presence and undamaged condition of the safety latch"],
+                correct: [0, 3]
+            },
+            {
+                id: 3,
+                question: "What does the 'IP' rating mean on electrical equipment?",
+                options: ["It indicates the load capacity of the equipment", "It indicates protection against dust and water ingress", "It indicates the operating temperature of the equipment"],
+                correct: [1]
+            },
+            {
+                id: 4,
+                question: "What does the abbreviation 'EBSZ' stand for?",
+                options: ["Electrical Equipment Standard", "Lifting Equipment Safety Regulations", "Lifting Equipment Warranty"],
+                correct: [1]
+            },
+            {
+                id: 5,
+                question: "Is modifying the counterweight allowed on sit-down forklifts?",
+                options: ["The counterweight of a sit-down forklift may be slightly increased.", "The counterweight of a sit-down forklift may be significantly increased.", "Increasing the counterweight of a sit-down forklift is prohibited."],
+                correct: [2]
+            },
+            {
+                id: 6,
+                question: "What is an overhead crane?",
+                options: ["An overhead crane is a lifting machine mounted on a wall console", "An overhead crane is a lifting machine moving on a fixed track", "An overhead crane is a road-going lifting machine mounted on a truck chassis"],
+                correct: [1]
+            },
+            {
+                id: 7,
+                question: "Clearly visible and easy-to-understand pictograms and signs must be placed on machines! Why?",
+                options: ["Because people with poor eyesight can also understand them", "Because these signs ensure the safety of people around the machine", "Because risk assessment reports are prepared based on them"],
+                correct: [1]
+            },
+            {
+                id: 8,
+                question: "You are carrying out earthwork with a tracked excavator... In what position should the front dozer blade be?",
+                options: ["The blade is fully raised because this provides the greatest stability for the machine", "The blade is lowered to ground level because this position provides machine stability"],
+                correct: [1]
+            },
+            {
+                id: 9,
+                question: "In the case of a sit-down forklift, what does transport height mean?",
+                options: ["5–15 cm", "40–50 cm", "20–30 cm"],
+                correct: [2]
+            },
+            {
+                id: 10,
+                question: "Why is working under overhead power lines dangerous?",
+                options: ["Because the machine may tip over", "Because the machine lights will not work", "Because electrical voltage may arc over to the machine"],
+                correct: [2]
+            },
+            {
+                id: 11,
+                question: "Why is a signal person required?",
+                options: ["Because the machine operator may not work independently", "Because the machine operator obtained the licence less than 1 year ago", "Because the operator cannot fully see the work area, and the signal person assists with verbal/hand signals for safe operation"],
+                correct: [2]
+            },
+            {
+                id: 12,
+                question: "Circle the names of the four strokes of an internal combustion engine!",
+                options: ["Intake, compression, intake, exhaust", "Intake, compression, holding down, exhaust", "Intake, compression, power (expansion), exhaust"],
+                correct: [2]
+            },
+            {
+                id: 13,
+                question: "What are the components of a tracked undercarriage?",
+                options: ["Rubber wheel, drive shaft, hydraulic motor, axle shaft, tension wheel", "Track chain, drive sprocket, tension wheel, track rollers, carrier rollers", "Track chain, rubber wheel, drive shaft, shock absorber system, rubber belt"],
+                correct: [1]
+            },
+            {
+                id: 14,
+                question: "What are the components of a hydraulic system?",
+                options: ["Fluid tank, diesel tank, water pump, electrical sensor, spring brake chamber", "Fluid tank, drive shaft, retarder, electrical sensor, directional valve", "Fluid tank, hydraulic pump, directional valve, pressure control valve, check valve"],
+                correct: [2]
+            },
+            {
+                id: 15,
+                question: "What is considered an occupational accident?",
+                options: ["A slowly occurring external effect independent of the worker's will, causing injury or death", "A sudden external effect independent of the worker's will, causing injury or death", "A sudden external effect in accordance with the worker's will, causing injury or death"],
+                correct: [1]
+            },
+            {
+                id: 16,
+                question: "What types of occupational safety training exist?",
+                options: ["Preliminary, temporary, exclusive", "Preliminary, periodic, optional", "Preliminary, periodic, extraordinary"],
+                correct: [2]
+            },
+            {
+                id: 17,
+                question: "Which of the following are collective protective equipment?",
+                options: ["Floor markings, safety shoes, earmuffs, guardrails, helmet", "Protective guards, floor markings, barriers, safety shoes, helmet", "Floor markings, guardrails, protective guards, fire extinguisher, fire alarm system, extraction system"],
+                correct: [2]
+            },
+            {
+                id: 18,
+                question: "What is the Beaufort scale?",
+                options: ["It shows the charge level of a cyclic battery", "It shows the chassis tilt angle of the machine", "It is used for the practical determination of wind force"],
+                correct: [2]
+            },
+            {
+                id: 19,
+                question: "The two main fields of occupational safety are...",
+                options: ["Work safety, work experience", "Occupational health, workplace", "Work safety, occupational health"],
+                correct: [2]
+            },
+            {
+                id: 20,
+                question: "Where is a safety (anti-fall) valve used?",
+                options: ["In the electrolyte of the starter battery", "In the tire pressure measuring instrument", "In the hydraulic system", "As an important component of a fall arrest harness"],
+                correct: [2]
+            },
+            {
+                id: 21,
+                question: "What type of acid is used in lead-acid batteries?",
+                options: ["Hydrochloric acid", "Sulfuric acid", "Boric acid", "Nitric acid"],
+                correct: [1]
+            },
+            {
+                id: 22,
+                question: "Why must a machine be stabilized with outriggers?",
+                options: ["To provide wider support than the undercarriage; relieve the undercarriage load; level the chassis", "To relieve the undercarriage load; level the chassis; relieve the parking brake", "To level the chassis; relieve the service brake; lift heavier loads than permitted"],
+                correct: [0]
+            },
+            {
+                id: 23,
+                question: "What does the viscosity of a lubricant mean?",
+                options: ["The temperature of the liquid", "The electrical conductivity of the liquid", "The flow resistance (thickness) of the liquid"],
+                correct: [2]
+            },
+            {
+                id: 24,
+                question: "What is the correct order of a periodic machine inspection?",
+                options: ["Visual inspection, operational test, machine logbook", "Visual inspection, machine logbook, operational test", "Machine logbook, visual inspection, operational test, machine logbook"],
+                correct: [2]
+            },
+            {
+                id: 25,
+                question: "What is the electrolyte in an acid battery?",
+                options: ["A mixture of hydrochloric acid and distilled water", "A mixture of nitric acid and tap water", "A mixture of sulfuric acid and distilled water"],
+                correct: [2]
+            },
+            {
+                id: 26,
+                question: "Tracked machines have...",
+                options: ["Stub-axle steering", "Differential (skid) steering", "Globoid worm steering"],
+                correct: [1]
+            },
+            {
+                id: 27,
+                question: "What does the load chart mean?",
+                options: ["It shows the force acting on the wheels", "It shows at what lifting weight outriggers must be used", "It shows how much weight the machine can safely lift without tipping over"],
+                correct: [2]
+            },
+            {
+                id: 28,
+                question: "What is the basic principle of hydraulics?",
+                options: ["Liquid is compressible", "Friction increases machine performance", "Compressed air moves the piston", "Pressure in a liquid spreads equally in every direction"],
+                correct: [3]
+            },
+            {
+                id: 29,
+                question: "What is the function of a hydraulic pump?",
+                options: ["Cooling the engine", "Storing compressed air and operating the pneumatic system", "Cooling the cooling system", "Circulating and pressurizing hydraulic fluid"],
+                correct: [3]
+            },
+            {
+                id: 30,
+                question: "What is the function of the exhaust system?",
+                options: ["Cooling the engine", "Lubricating the engine", "Removing combustion gases", "Storing combustion gases", "Starting the engine"],
+                correct: [2]
+            },
+            {
+                id: 31,
+                question: "What is the main function of the battery on machines?",
+                options: ["Operating the hydraulics", "Supplying antifreeze to the cooling system", "Storing and supplying electrical energy"],
+                correct: [2]
+            },
+            {
+                id: 32,
+                question: "What is the function of the service brake?",
+                options: ["Stopping the engine", "Securing the vehicle in place", "Slowing down and stopping the vehicle", "Indicating vehicle malfunction"],
+                correct: [2]
+            },
+            {
+                id: 33,
+                question: "Which brake system operates with compressed air?",
+                options: ["Engine brake", "Hydraulic brake", "Air brake", "Mechanical brake"],
+                correct: [2]
+            },
+            {
+                id: 34,
+                question: "What does transmission of rotational motion mean?",
+                options: ["Operating the engine at idle speed", "The pneumatic system takes over the role of hydraulic drive", "Transferring rotational movement from one shaft to another"],
+                correct: [2]
+            },
+            {
+                id: 35,
+                question: "What is the function of the engine lubrication system?",
+                options: ["Cooling the engine with air", "Delivering fuel", "Reducing friction and lubricating components", "Cooling the engine with water"],
+                correct: [2]
+            },
+            {
+                id: 36,
+                question: "What type of undercarriage is shown in diagram #36?",
+                options: ["Tracked", "Rail-mounted adapter type", "Walking mechanism type"],
+                correct: [0]
+            },
+            {
+                id: 37,
+                question: "What is shown in diagram #37?",
+                options: ["The control panel of a hydraulic system", "A ground pressure distribution pad placed under an outrigger", "A dual-circuit air brake system"],
+                correct: [1]
+            },
+            {
+                id: 38,
+                question: "The color combination of a warning sign is...",
+                options: ["Blue-white", "Green-white", "Yellow-black"],
+                correct: [2]
+            },
+            {
+                id: 39,
+                question: "What is required for a fire to start?",
+                options: ["Oxygen, combustion temperature, combustible material", "Oxygen, match, combustible material", "Oxygen, combustible material, ignition temperature"],
+                correct: [2]
+            },
+            {
+                id: 40,
+                question: "What is the function of a fire extinguisher?",
+                options: ["It feeds and then extinguishes the fire", "It is used for quickly extinguishing fires or preventing their spread", "It prevents heat caused by fire and helps the fire spread further"],
+                correct: [1]
+            },
+            {
+                id: 41,
+                question: "Why are order and cleanliness important in the workplace?",
+                options: ["Because tools cannot be found in a messy workplace", "Because a disorganized work area increases the risk of accidents and injuries", "Because it helps machine traffic movement"],
+                correct: [1]
+            },
+            {
+                id: 42,
+                question: "When is extraordinary occupational safety training required in the workplace?",
+                options: ["When there is a power outage in the work area", "Every month", "When new technology/machinery is introduced, or after a long absence from work"],
+                correct: [2]
+            },
+            {
+                id: 43,
+                question: "What is called an absorbent material?",
+                options: ["The mixture of sulfuric acid and water found in batteries", "Liquids used in cooling systems", "Materials capable of absorbing liquids or gases and retaining them internally", "Another name for hazardous substances"],
+                correct: [2]
+            },
+            {
+                id: 44,
+                question: "What is steering free play on machines?",
+                options: ["The angle through which the steering wheel can be turned without the wheels moving", "The displaced position of the steering column", "The adjustable height of the steering wheel"],
+                correct: [0]
+            },
+            {
+                id: 45,
+                question: "What is shown in diagram #45?",
+                options: ["Police hand signals prescribed by road traffic regulations", "Hand signals used by the Hungarian State Railways (MÁV)", "Hand signals prescribed by regulation for a signal person"],
+                correct: [2]
+            },
+            {
+                id: 46,
+                question: "What is shown in diagram #46?",
+                options: ["The operation of the hydraulic system", "The operation of a dual-circuit air brake system", "The four strokes of a four-stroke internal combustion engine"],
+                correct: [2]
+            }
+        ];
+
+        const container = document.getElementById('quizContainer');
+        const promptBanner = document.getElementById('promptBanner');
+        const promptTitle = document.getElementById('promptTitle');
+        const promptBody = document.getElementById('promptBody');
+
+        let timeoutId = null;
+
+        quizData.forEach((item) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            const cardInner = document.createElement('div');
+            cardInner.className = 'card-inner';
+
+            // Front
+            const front = document.createElement('div');
+            front.className = 'card-front';
+
+            let optionsHTML = '<ul class="options-list">';
+            item.options.forEach((opt) => {
+                optionsHTML += `<li class="option-item">${opt}</li>`;
+            });
+            optionsHTML += '</ul>';
+
+            front.innerHTML = `
+                <div>
+                    <div class="q-number">Question ${item.id}</div>
+                    <div class="q-title">${item.question}</div>
+                    ${optionsHTML}
+                </div>
+                <div class="hint-text">Click to flip & see correct answer</div>
+            `;
+
+            // Back
+            const back = document.createElement('div');
+            back.className = 'card-back';
+
+            let correctAnswers = item.correct.map(idx => item.options[idx]).join(' <br><br> ');
+
+            let backOptionsHTML = '<ul class="options-list">';
+            item.options.forEach((opt, idx) => {
+                const isCorrect = item.correct.includes(idx);
+                backOptionsHTML += `<li class="option-item ${isCorrect ? 'correct' : ''}">${opt}</li>`;
+            });
+            backOptionsHTML += '</ul>';
+
+            back.innerHTML = `
+                <div>
+                    <div class="q-number">Question ${item.id} - Answer</div>
+                    <div class="answer-heading">Correct Answer(s):</div>
+                    ${backOptionsHTML}
+                </div>
+                <div class="hint-text">Click to flip back</div>
+            `;
+
+            cardInner.appendChild(front);
+            cardInner.appendChild(back);
+            card.appendChild(cardInner);
+
+            card.addEventListener('click', () => {
+                card.classList.toggle('flipped');
+                
+                // Show Prompt
+                const isFlipped = card.classList.contains('flipped');
+                if (isFlipped) {
+                    showPrompt(item.id, item.correct.map(idx => item.options[idx]));
+                }
+            });
+
+            container.appendChild(card);
+        });
+
+        function showPrompt(qNum, answers) {
+            promptTitle.textContent = `Correct Answer for Q${qNum}:`;
+            promptBody.innerHTML = answers.join(' <br><strong>AND</strong><br> ');
+            
+            promptBanner.classList.add('show');
+
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                promptBanner.classList.remove('show');
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
